@@ -253,21 +253,30 @@ app.get('/', (req, res) => {
 })
 
 app.get('/:user/:folder/:subfolder/:file/:token', (req, res) => {
-  console.log("aala")
-  console.log(req.params)
-  const filePath = path.join(__dirname, 'jsons', req.params.user, req.params.folder, req.params.subfolder, req.params.file);
-  jwt.verify(req.params.token, process.env.SECRET_KEY, (err) => {
-    if(err) {console.log("wrong user access token"); return;}
+  console.log("aala");
+  console.log(req.params);
 
-      res.sendFile(filePath, (err) => {
-        console.log("sent")
-        if (err) {
-          console.error("sent nahi zala");
-          res.sendStatus(409); 
+  const filePath = path.join(__dirname, 'jsons', req.params.user, req.params.folder, req.params.subfolder, req.params.file);
+
+  jwt.verify(req.params.token, process.env.SECRET_KEY, (err) => {
+    if (err) {
+      console.log("wrong user access token");
+      return res.status(403).send("Forbidden"); // Proper status for authentication failure
+    }
+
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        console.error("sent nahi zala", err);
+        if (!res.headersSent) { // Ensure headers haven't already been sent
+          return res.status(409).send("File not sent");
         }
-      });
-  })
-})
+      } else {
+        console.log("sent");
+      }
+    });
+  });
+});
+
 app.get('/sub', (req, res) => {
   res.sendFile(__dirname + '/jsons/admin/OBX/i wonder/sub2.srt')
 })
