@@ -15,6 +15,29 @@ app.use('/uploadimg', express.static('vidi'));
 app.use(express.json());
 let PORT = process.env.PORT || 5000;
 
+const storage_sub = multer.diskStorage({
+  destination : function (req, file, cb) {
+    let user = file.originalname.split("&&$")[0];
+    let folder = file.originalname.split("&&$")[1];
+    let subfolder = file.originalname.split("&&$")[2];
+    const dirPath = path.join(__dirname, 'jsons', user, folder, subfolder);
+    console.log(dirPath)
+    fs.mkdir(dirPath, { recursive: true }, (err) => {
+      
+      if (err) {
+        console.error('Error creating directory:', err);
+        return cb(err); 
+      }
+      cb(null, dirPath); 
+    });
+  },
+  filename: function (req, file, cb) {
+    let filename = file.originalname.split('&&$')[3];
+    console.log("Saving file as:", filename);
+    cb(null, filename);
+}
+
+})
 const storage_img = multer.diskStorage({
   destination: function (req, file, cb) {
     
@@ -53,6 +76,7 @@ var storage_video = multer.diskStorage({
 
 const video_upload = multer ( {storage: storage_video} );
 const img_upload = multer({ storage: storage_img }); 
+const sub_upload = multer({storage : storage_sub});
 
 app.use(bodyParser.json());
 app.use('/show_imgs', express.static('vidi'))
@@ -61,7 +85,14 @@ app.listen(PORT, () => {
 });
 
 
-
+app.post('/uploadsub', sub_upload.single('sub'), (req, res, next) => {
+  console.log("hello")
+  if(req.file) {
+    console.log(req.file.originalname);
+    
+  }
+  return res.json({"successful upload" : "true"});
+})
 app.post('/uploadvideo', video_upload.single('video'), (req, res, next) => {
   const file = req.file;
   const videoname = req.body.videoname;
@@ -277,9 +308,40 @@ app.get('/:user/:folder/:subfolder/:file/:token', (req, res) => {
   });
 });
 
-app.get('/sub', (req, res) => {
-  res.sendFile(__dirname + '/jsons/admin/OBX/i wonder/sub2.srt')
-})
+// app.get('/sub', (req, res) => {
+//   // res.sendFile(__dirname + '/jsons/admin/OBX/i wonder/sub2.srt')
+//   // res.sendFile(__dirname + '/jsons/admin/OBX/i wonder/where did all the time go')
+
+  
+// })
+
+app.post('/sub', (req, res) => {
+  //   // res.sendFile(__dirname + '/jsons/admin/OBX/i wonder/sub2.srt')
+  //   // res.sendFile(__dirname + '/jsons/admin/OBX/i wonder/where did all the time go')
+  console.log("subrequest")
+    let username = req.body.username;
+    let folder = req.body.folder;
+    let subfolder = req.body.subfolder;
+    let filename = req.body.filename;
+    let filepath = path.join(__dirname, 'jsons', username, folder, subfolder, filename);
+    if(fs.existsSync(filepath)) {
+      return res.sendFile(filepath);
+    }
+    else {
+      return res.status(404)
+    }
+    
+  })
+// app.get('/:user/:folder/:subfolder/:vidname', (req, res) => {
+//   console.log("hello")
+//   const path = path.join(__dirname, 'jsons', req.params.user, req.params.folder, req.params.subfolder, `${req.params.vidname}.srt`);
+//   if(fs.existsSync(path)) {
+//     res.sendFile(path);
+//   }
+//   else {
+//     return res.status(404);
+//   }
+// })
 
 
 app.post('/:user/:folder/:subfolder/:filename', (req, res) => {
