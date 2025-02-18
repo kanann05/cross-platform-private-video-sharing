@@ -74,7 +74,7 @@ function Video({ vidname, src, folder, subfolder }) {
     //     }
     // }, [])
 
-    return(<Link to = '/player' state={{src : src}} className = "sf-div" id = {vidname} style = {{
+    return(<Link to = '/player' state={{src : src, folder : folder, subfolder : subfolder, vidname : vidname}} className = "sf-div" id = {vidname} style = {{
         overflow : "hidden",
         backgroundColor : "rgba(57, 57, 57, 0.7)",
         width : "100%",
@@ -280,7 +280,7 @@ export default function FolderPage() {
             
             <div className = "vids" style = {{marginTop : "15px", backgroundColor : "transparent", width : "60vw"}}>
                 {videos == null ? (null) : (videos.map((v, i) => (
-                    <Video vidname={v.videoname} src = {v.src} key= {i}/>
+                    <Video vidname={v.videoname} src = {v.src} folder = {folder} subfolder={focus} key= {i}/>
                 )))}
 
 
