@@ -73,7 +73,7 @@ function Login({setLoggedin} : {setLoggedin : (value:boolean) => void}) {
       </TVFocusGuideView>
       <TouchableOpacity style={{ backgroundColor: "black", width: 150, height: 30, justifyContent: "center", alignItems: "center" }} onPress={async () => {
          console.log("submit clicked")
-               const response = await fetch('http://192.168.1.18:5000/login', {
+               const response = await fetch('http://192.168.1.12:5000/login', {
                  
                  method : 'POST',
                  headers: {
@@ -97,7 +97,7 @@ function Login({setLoggedin} : {setLoggedin : (value:boolean) => void}) {
                const token = await AsyncStorage.getItem('accessToken');
                const user = await AsyncStorage.getItem('username');
                try {
-                 const response2 = await fetch('http://192.168.1.18:5000/checkTok', {
+                 const response2 = await fetch('http://192.168.1.12:5000/checkTok', {
                    method: 'POST',
                    headers: {
                      'Content-Type': 'application/json',
@@ -204,8 +204,8 @@ function Player({ route }: { route: RouteProp<RootStackParamList, 'player'> })  
     let func = async () => {
       let accessToken = await AsyncStorage.getItem("accessToken");
       if(src.charAt(0) == '/') {
-        console.log("aaya : " + `http://192.168.1.18:5000${src}/${accessToken}`)
-        setUrl(`http://192.168.1.18:5000${src}/${accessToken}`)
+        console.log("aaya : " + `http://192.168.1.12:5000${src}/${accessToken}`)
+        setUrl(`http://192.168.1.12:5000${src}/${accessToken}`)
       }
       else {
         setUrl(src);
@@ -219,7 +219,15 @@ function Player({ route }: { route: RouteProp<RootStackParamList, 'player'> })  
     const fetchSrtFile = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://192.168.1.18:5000/sub');
+        let username = await AsyncStorage.getItem("username");
+        let folder = await AsyncStorage.getItem("folder");
+        let subfolder = await AsyncStorage.getItem("subfolder");
+        let videoname = await AsyncStorage.getItem("videoname");
+        const response = await fetch('http://192.168.1.12:5000/sub', {
+          method : 'POST',
+          headers : {'Content-type' : 'application/json'},
+          body : JSON.stringify({"username" : username, "folder" : folder, "subfolder" : subfolder, "filename" : videoname})
+        })
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -228,13 +236,13 @@ function Player({ route }: { route: RouteProp<RootStackParamList, 'player'> })  
         const parser = new SrtParser();
         const parsedSubtitles = parser.fromSrt(srtFileContent);
         
-        // Log the parsed subtitles properly
+       
         console.log('Parsed subtitles:', JSON.stringify(parsedSubtitles, null, 2));
         
         setSubtitles(parsedSubtitles);
         setLoading(false);
         
-        // Debug log after state update
+        
         setTimeout(() => {
           console.log('Current subtitles state:', JSON.stringify(subtitles, null, 2));
         }, 100);
@@ -406,7 +414,7 @@ function Player({ route }: { route: RouteProp<RootStackParamList, 'player'> })  
 
       {/* Bottom red bar with volume and audio/subtitles buttons */}
       <View style={{ position: 'absolute', zIndex: 20, left: '10%', bottom: viz ? 100 : 35, width: '80%', height: 45, backgroundColor: 'rgba(0, 0, 0, 0)', justifyContent: 'center', alignItems: 'center' }}>
-   {/* <Subtitles currentTime={ts} selectedsubtitle={{ file: 'http://192.168.1.18:5000/sub' }} /> */}
+   {/* <Subtitles currentTime={ts} selectedsubtitle={{ file: 'http://192.168.1.12:5000/sub' }} /> */}
    <Text style = {{ backgroundColor: st != null?  'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)', paddingBottom : 5, paddingTop : 5,paddingLeft : 10, paddingRight : 10, color : 'white', fontSize : 17, borderRadius : 3}}>{st}</Text>
 </View>
 
@@ -422,7 +430,7 @@ function Main({ route }: { route: RouteProp<RootStackParamList, 'main'> }) {
   const fetchVideos = async (subfolder: string) => {
     let username = await AsyncStorage.getItem('username')
     try {
-      const res = await fetch('http://192.168.1.18:5000/videos', {
+      const res = await fetch('http://192.168.1.12:5000/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -452,7 +460,7 @@ function Main({ route }: { route: RouteProp<RootStackParamList, 'main'> }) {
     const fetchData = async () => {
       let username = await AsyncStorage.getItem('username')
       try {
-        const res = await fetch('http://192.168.1.18:5000/subfolders', {
+        const res = await fetch('http://192.168.1.12:5000/subfolders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -510,7 +518,7 @@ function Main({ route }: { route: RouteProp<RootStackParamList, 'main'> }) {
       {sf == null
         ? null
         : sf.map((f, i) => (
-            <TouchableOpacity style = {{borderRadius : 2, marginBottom : 10, backgroundColor : '#7E97CB', paddingLeft : 10, paddingRight : 10, paddingTop : 5, paddingBottom : 5, width : '80%', display : 'flex', justifyContent : 'center', alignItems : 'center'}} onPress={() => fetchVideos(f)} key={i}>
+            <TouchableOpacity style = {{borderRadius : 2, marginBottom : 10, backgroundColor : '#7E97CB', paddingLeft : 10, paddingRight : 10, paddingTop : 5, paddingBottom : 5, width : '80%', display : 'flex', justifyContent : 'center', alignItems : 'center'}} onPress={async () => {fetchVideos(f); await AsyncStorage.setItem("subfolder", f)}} key={i}>
               <Text>{f}</Text>
             </TouchableOpacity>
           ))}
@@ -534,7 +542,7 @@ function Main({ route }: { route: RouteProp<RootStackParamList, 'main'> }) {
         : videos.map((f, i) => (
             <TouchableOpacity
             style = {{backgroundColor : 'grey', borderRadius : 3, marginBottom : 15, paddingRight : 10, paddingLeft : 10, paddingBottom : 5, paddingTop : 5, width : '50%'}}
-              onPress={() => navigation.navigate("player", { src: f.src })}
+              onPress={async () => {navigation.navigate("player", { src: f.src }); await AsyncStorage.setItem("videoname", f.videoname)}}
               key={i}
             >
               <Text>{f.videoname}</Text>
@@ -555,7 +563,7 @@ function Folder({i, folderName, imgUrl, accessToken }: {i : Int32, folderName: S
 
   useEffect(() => {
     if(imgUrl.charAt(0) == '/') {
-      setImg(`http://192.168.1.18:5000${imgUrl}/${accessToken}`);
+      setImg(`http://192.168.1.12:5000${imgUrl}/${accessToken}`);
     }
     else {
       setImg(imgUrl);
@@ -567,7 +575,8 @@ function Folder({i, folderName, imgUrl, accessToken }: {i : Int32, folderName: S
       style={{ opacity: opacity, marginTop : 5, marginBottom : 5, marginLeft : 10, marginRight : 10 }} 
       onFocus={() => { setOpacity(0.5) }} 
       onBlur={() => setOpacity(1)}
-      onPress={() => { console.log("clicked " + folderName);
+      onPress={async () => { console.log("clicked " + folderName);
+        await AsyncStorage.setItem("folder", String(folderName));
         navigation.navigate('main', { showName: String(folderName) });
        }}
     >
@@ -663,7 +672,7 @@ function Wrapper() {
           const user = await AsyncStorage.getItem('username');
           console.log(token)
           try {
-            const response = await fetch('http://192.168.1.18:5000/checkTok', {
+            const response = await fetch('http://192.168.1.12:5000/checkTok', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
